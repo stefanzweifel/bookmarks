@@ -13,6 +13,7 @@ use OCA\Bookmarks\Contract\IBookmarkPreviewer;
 use OCA\Bookmarks\Db\Bookmark;
 use OCA\Bookmarks\Service\Previewers\GenericUrlBookmarkPreviewer;
 use OCA\Bookmarks\Service\Previewers\PageresBookmarkPreviewer;
+use OCA\Bookmarks\Service\Previewers\Screeenly3BookmarkPreviewer;
 use OCA\Bookmarks\Service\Previewers\ScreeenlyBookmarkPreviewer;
 use OCA\Bookmarks\Service\Previewers\ScreenshotMachineBookmarkPreviewer;
 use OCA\Bookmarks\Service\Previewers\WebshotBookmarkPreviewer;
@@ -33,6 +34,7 @@ class AdminController extends Controller {
 		IRequest $request,
 		private SettingsService $settingsService,
 		GenericUrlBookmarkPreviewer $urlPreviewer,
+		Screeenly3BookmarkPreviewer $screeenly3Previewer,
 		ScreeenlyBookmarkPreviewer $screeenlyPreviewer,
 		ScreenshotMachineBookmarkPreviewer $screenshotMachinePreviewer,
 		WebshotBookmarkPreviewer $webshotPreviewer,
@@ -41,6 +43,7 @@ class AdminController extends Controller {
 		parent::__construct($appName, $request);
 		$this->previewers = [
 			'url' => $urlPreviewer,
+			'screeenly3' => $screeenly3Previewer,
 			'screeenly' => $screeenlyPreviewer,
 			'screenshotmachine' => $screenshotMachinePreviewer,
 			'webshot' => $webshotPreviewer,

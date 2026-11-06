@@ -52,7 +52,25 @@
 			<p>
 				{{
 					t('bookmarks',
-						'You can either sign up for free at screeenly.com or setup your own server.'
+						'Sign up for free at 3.screeenly.com and create an API token.'
+					)
+				}}
+			</p>
+			<p>
+				<label>{{ t('bookmarks', 'Screeenly API token') }}
+					<input v-model="settings['previews.screeenly3.token']"
+						type="text"
+						@input="onChange"></label>
+			</p>
+			<figure class="test-screenshot">
+				<img :src="generateUrl(`/apps/bookmarks/admin/previewers/screeenly3?date=${testDate}`)" alt="Screeenly test screenshot">
+				<figcaption>Test screenshot of nextcloud.com with current Screeenly configuration.</figcaption>
+			</figure>
+			<h3>{{ t('bookmarks', 'Screeenly (legacy)') }}</h3>
+			<p>
+				{{
+					t('bookmarks',
+						'For screeenly.com accounts created before version 3 and self-hosted screeenly servers. New accounts should use the Screeenly section above.'
 					)
 				}}
 			</p>
@@ -70,8 +88,8 @@
 						@input="onChange"></label>
 			</p>
 			<figure class="test-screenshot">
-				<img :src="generateUrl(`/apps/bookmarks/admin/previewers/screeenly?date=${testDate}`)" alt="Screeenly test screenshot">
-				<figcaption>Test screenshot of nextcloud.com with current Screeenly configuration.</figcaption>
+				<img :src="generateUrl(`/apps/bookmarks/admin/previewers/screeenly?date=${testDate}`)" alt="Screeenly (legacy) test screenshot">
+				<figcaption>Test screenshot of nextcloud.com with current Screeenly (legacy) configuration.</figcaption>
 			</figure>
 			<h3>{{ t('bookmarks', 'ScreenshotMachine') }}</h3>
 			<p>
@@ -139,6 +157,7 @@ import { loadState } from '@nextcloud/initial-state'
 import { generateUrl } from '@nextcloud/router'
 
 const SETTINGS = [
+	'previews.screeenly3.token',
 	'previews.screenly.url',
 	'previews.screenly.token',
 	'previews.webshot.url',
