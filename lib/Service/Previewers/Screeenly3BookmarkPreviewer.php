@@ -12,9 +12,12 @@ use Exception;
 use OCA\Bookmarks\Contract\IBookmarkPreviewer;
 use OCA\Bookmarks\Contract\IImage;
 use OCA\Bookmarks\Db\Bookmark;
+use OCA\Bookmarks\Exception\PreviewTemporarilyUnavailableError;
 use OCA\Bookmarks\Image;
+use OCP\AppFramework\Http;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
@@ -29,6 +32,12 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 
 	// In seconds
 	public const HTTP_TIMEOUT = 30;
+
+	// In seconds
+	public const RETRY_AFTER_RATE_LIMITED = 5 * 60;
+
+	// In seconds
+	public const RETRY_AFTER_FORBIDDEN = 24 * 60 * 60;
 
 	private string $apiKey;
 
@@ -51,6 +60,7 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 	 * @param Bookmark|null $bookmark
 	 *
 	 * @return Image|null
+	 * @throws PreviewTemporarilyUnavailableError
 	 */
 	public function getImage($bookmark, $cacheOnly = false): ?IImage {
 		if (!isset($bookmark) || $cacheOnly) {
@@ -63,6 +73,9 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 		return $this->fetchImage($bookmark->getUrl());
 	}
 
+	/**
+	 * @throws PreviewTemporarilyUnavailableError
+	 */
 	public function fetchImage(string $url): ?Image {
 		try {
 			$response = $this->client->post(self::API_URL, [
@@ -77,7 +90,16 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 					'window_height' => $this->height,
 				],
 				'timeout' => self::HTTP_TIMEOUT,
+				'http_errors' => false,
 			]);
+		} catch (Exception $e) {
+			$this->logger->debug($e->getMessage(), ['app' => 'bookmarks']);
+			return null;
+		}
+
+		$this->ensureAccountCanCreateShots($response);
+
+		try {
 			if ($response->getStatusCode() !== 200) {
 				return null;
 			}
@@ -98,5 +120,30 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 		}
 
 		return new Image('image/jpeg', $imageResponse->getBody());
+	}
+
+	/**
+	 * screeenly responds with 429 when the account sends too many requests per minute or at once,
+	 * and with 403 when the monthly quota and the credits are used up.
+	 *
+	 * @throws PreviewTemporarilyUnavailableError
+	 */
+	private function ensureAccountCanCreateShots(IResponse $response): void {
+		$statusCode = $response->getStatusCode();
+
+		if ($statusCode === Http::STATUS_TOO_MANY_REQUESTS) {
+			$retryAfter = (int)$response->getHeader('Retry-After');
+			throw new PreviewTemporarilyUnavailableError(
+				'screeenly rate limit reached',
+				max($retryAfter, self::RETRY_AFTER_RATE_LIMITED),
+			);
+		}
+
+		if ($statusCode === Http::STATUS_FORBIDDEN) {
+			throw new PreviewTemporarilyUnavailableError(
+				'screeenly account can\'t create screenshots, e.g. because the monthly quota is used up',
+				self::RETRY_AFTER_FORBIDDEN,
+			);
+		}
 	}
 }

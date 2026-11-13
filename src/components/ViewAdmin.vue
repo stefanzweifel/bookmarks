@@ -52,7 +52,7 @@
 			<p>
 				{{
 					t('bookmarks',
-						'Sign up for free at 3.screeenly.com and create an API token.'
+						'Sign up for free at 3.screeenly.com and create an API token. The free plan covers about 100 new bookmarks a month. You can buy credits for more. When the limit is reached, Bookmarks tries again the next day.'
 					)
 				}}
 			</p>
