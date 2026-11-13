@@ -37,6 +37,9 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 	public const RETRY_AFTER_RATE_LIMITED = 5 * 60;
 
 	// In seconds
+	public const RETRY_AFTER_QUOTA_USED_UP = 24 * 60 * 60;
+
+	// In seconds
 	public const RETRY_AFTER_FORBIDDEN = 24 * 60 * 60;
 
 	private string $apiKey;
@@ -124,7 +127,9 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 
 	/**
 	 * screeenly responds with 429 when the account sends too many requests per minute or at once,
-	 * and with 403 when the monthly quota and the credits are used up.
+	 * with 402 when the monthly quota and the credits are used up, and with 403 when the account
+	 * is blocked, its email address isn't verified or the token can't create shots.
+	 * Older versions of screeenly respond with 403 for a used up quota as well.
 	 *
 	 * @throws PreviewTemporarilyUnavailableError
 	 */
@@ -139,9 +144,16 @@ class Screeenly3BookmarkPreviewer implements IBookmarkPreviewer {
 			);
 		}
 
+		if ($statusCode === Http::STATUS_PAYMENT_REQUIRED) {
+			throw new PreviewTemporarilyUnavailableError(
+				'screeenly monthly quota and credits are used up',
+				self::RETRY_AFTER_QUOTA_USED_UP,
+			);
+		}
+
 		if ($statusCode === Http::STATUS_FORBIDDEN) {
 			throw new PreviewTemporarilyUnavailableError(
-				'screeenly account can\'t create screenshots, e.g. because the monthly quota is used up',
+				'screeenly account can\'t create screenshots',
 				self::RETRY_AFTER_FORBIDDEN,
 			);
 		}
